@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { TeamConditionLogo } from "@/components/team-condition-logo";
 import { formatLoginErrorMessage } from "@/lib/format-login-error";
-import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
 
 export function LoginPageClient() {
   const searchParams = useSearchParams();
@@ -31,15 +30,18 @@ export function LoginPageClient() {
     setError("");
 
     try {
-      const supabase = createBrowserSupabaseClient();
-      const redirectTo = `${window.location.origin}/auth/callback`;
-      const { error: signInError } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: { emailRedirectTo: redirectTo },
+      const response = await fetch("/api/auth/send-magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
       });
 
-      if (signInError) {
-        throw signInError;
+      const body = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+
+      if (!response.ok) {
+        throw new Error(body?.error ?? "ログインリンクの送信に失敗しました。");
       }
 
       setMessage(
@@ -47,7 +49,9 @@ export function LoginPageClient() {
       );
     } catch (caughtError) {
       const fallback = "ログインリンクの送信に失敗しました。時間をおいて再試行してください。";
-      setError(caughtError instanceof Error ? caughtError.message : fallback);
+      const raw =
+        caughtError instanceof Error ? caughtError.message : fallback;
+      setError(formatLoginErrorMessage(raw));
     } finally {
       setIsSubmitting(false);
     }
@@ -98,7 +102,7 @@ export function LoginPageClient() {
           </p>
         ) : null}
         {error ? (
-          <p className="mt-4 rounded-xl border border-[#e8c4c4] bg-[#fdf5f5] px-3 py-2 text-sm leading-relaxed text-[#8b3a3a]">
+          <p className="mt-4 whitespace-pre-line rounded-xl border border-[#e8c4c4] bg-[#fdf5f5] px-3 py-2 text-sm leading-relaxed text-[#8b3a3a]">
             {error}
           </p>
         ) : null}

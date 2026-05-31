@@ -125,10 +125,26 @@ Redirect URLs: https://team-condition-checker.vercel.app/auth/callback
 メールアプリ内ブラウザでもリンクログインできるよう、**Authentication → Email Templates → Magic Link** の本文リンクを次に変更:
 
 ```html
-<a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">ログインする</a>
+<h2>ログイン</h2>
+<p>以下のリンクからログインしてください。</p>
+<p><a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">ログインする</a></p>
 ```
 
 ※ デフォルトの `{{ .ConfirmationURL }}` は PKCE 用のため、スマホのメールアプリ内ブラウザで開くとログインに失敗します。上記に差し替えると、**今まで通りリンクをタップするだけ**でログインできます。
+
+**「Error sending magic link email」が出る場合**
+
+1. まず Magic Link テンプレートを上記に戻す（文法エラーがあるとメール自体が送れません）
+2. **Authentication → Providers → Email** で Email が ON か確認
+3. **Authentication → Rate Limits** でメール送信制限に達していないか確認（数分待つ）
+4. **Logs → Auth** で詳細エラーを確認
+5. テスト用にテンプレートを一時的にデフォルト（`{{ .ConfirmationURL }}`）に戻し、送信できるか確認
+
+Vercel の環境変数（任意・推奨）:
+
+| 名前 | 値 |
+|------|-----|
+| `NEXT_PUBLIC_SITE_URL` | `https://tcc-team-condition-checker.vercel.app` |
 
 ---
 
