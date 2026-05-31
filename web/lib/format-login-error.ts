@@ -1,4 +1,11 @@
-export function formatLoginErrorMessage(message: string): string {
+type FormatLoginErrorOptions = {
+  redirectTo?: string;
+};
+
+export function formatLoginErrorMessage(
+  message: string,
+  options?: FormatLoginErrorOptions,
+): string {
   if (message === "pkce_link") {
     return "メール内リンクをアプリ内ブラウザで開いたためログインに失敗しました。リンクを長押しして「Safariで開く」または「Chromeで開く」を選んでください。";
   }
@@ -28,8 +35,25 @@ export function formatLoginErrorMessage(message: string): string {
     return "送信回数が多すぎます。数分待ってから再度お試しください。";
   }
 
-  if (lower.includes("redirect") && lower.includes("url")) {
-    return "リダイレクト URL の設定が正しくありません。Supabase の Redirect URLs に本番の /auth/callback を追加してください。";
+  if (
+    lower.includes("redirect") &&
+    (lower.includes("url") ||
+      lower.includes("not allowed") ||
+      lower.includes("invalid"))
+  ) {
+    const redirectTo = options?.redirectTo;
+    const siteUrl = redirectTo?.replace(/\/auth\/callback\/?$/, "");
+    return [
+      "リダイレクト URL の設定が正しくありません。",
+      "Supabase → Authentication → URL Configuration で次を設定して Save してください。",
+      "",
+      redirectTo
+        ? `Redirect URLs に追加:\n${redirectTo}`
+        : "Redirect URLs に本番の /auth/callback を追加",
+      siteUrl ? `\nSite URL:\n${siteUrl}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
   }
 
   return message;

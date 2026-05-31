@@ -94,7 +94,7 @@ git push -u origin main
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → API → anon public key（`.env.local` と同じ） |
 
 6. **Deploy** をクリック
-7. 完了後 URL をメモ（例: `https://team-condition-checker.vercel.app`）
+7. 完了後 URL をメモ（本番: `https://tcc-team-condition-checker.vercel.app`）
 
 > ビルドは `prisma migrate deploy` → `next build` が走ります。`DATABASE_URL` 未設定だと失敗します。
 
@@ -114,9 +114,13 @@ git push -u origin main
 例:
 
 ```
-Site URL: https://team-condition-checker.vercel.app
-Redirect URLs: https://team-condition-checker.vercel.app/auth/callback
+Site URL: https://tcc-team-condition-checker.vercel.app
+Redirect URLs:
+  https://tcc-team-condition-checker.vercel.app/auth/callback
+  https://tcc-team-condition-checker.vercel.app/**
 ```
+
+※ ドメインが違うとログイン送信時に「リダイレクト URL」エラーになります。Vercel の実際の URL と **完全一致** させてください。
 
 4. **Save**
 

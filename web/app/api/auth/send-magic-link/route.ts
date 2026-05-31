@@ -15,14 +15,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "メールアドレスを入力してください。" }, { status: 400 });
   }
 
-  const requestOrigin = new URL(request.url).origin;
-  const redirectTo = resolveAuthCallbackUrl(requestOrigin);
+  const redirectTo = resolveAuthCallbackUrl(request);
 
   const { error } = await sendMagicLinkEmail(email, redirectTo);
 
   if (error) {
     return NextResponse.json(
-      { error: formatLoginErrorMessage(error.message) },
+      { error: formatLoginErrorMessage(error.message, { redirectTo }) },
       { status: 400 },
     );
   }
