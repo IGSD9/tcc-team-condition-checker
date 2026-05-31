@@ -2,10 +2,21 @@ type FormatLoginErrorOptions = {
   redirectTo?: string;
 };
 
+const FORMATTED_ERROR_PREFIXES = [
+  "リダイレクト URL の設定が正しくありません。",
+  "ログインメールの送信に失敗しました（Supabase 側の設定を確認してください）。",
+  "送信回数が多すぎます。",
+  "メール内リンクをアプリ内ブラウザで開いたため",
+] as const;
+
 export function formatLoginErrorMessage(
   message: string,
   options?: FormatLoginErrorOptions,
 ): string {
+  if (FORMATTED_ERROR_PREFIXES.some((prefix) => message.startsWith(prefix))) {
+    return message;
+  }
+
   if (message === "pkce_link") {
     return "メール内リンクをアプリ内ブラウザで開いたためログインに失敗しました。リンクを長押しして「Safariで開く」または「Chromeで開く」を選んでください。";
   }

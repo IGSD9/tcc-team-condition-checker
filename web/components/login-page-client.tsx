@@ -41,17 +41,17 @@ export function LoginPageClient() {
         | null;
 
       if (!response.ok) {
-        throw new Error(body?.error ?? "ログインリンクの送信に失敗しました。");
+        setError(body?.error ?? "ログインリンクの送信に失敗しました。");
+        return;
       }
 
       setMessage(
         "ログインリンクを送信しました。メール内のリンクをタップしてログインしてください。",
       );
-    } catch (caughtError) {
-      const fallback = "ログインリンクの送信に失敗しました。時間をおいて再試行してください。";
-      const raw =
-        caughtError instanceof Error ? caughtError.message : fallback;
-      setError(formatLoginErrorMessage(raw));
+    } catch {
+      setError(
+        "ログインリンクの送信に失敗しました。時間をおいて再試行してください。",
+      );
     } finally {
       setIsSubmitting(false);
     }

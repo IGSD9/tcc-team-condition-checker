@@ -15,7 +15,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "メールアドレスを入力してください。" }, { status: 400 });
   }
 
-  const redirectTo = resolveAuthCallbackUrl(request);
+  let redirectTo: string;
+  try {
+    redirectTo = resolveAuthCallbackUrl(request);
+  } catch {
+    return NextResponse.json(
+      { error: "ログイン用 URL の判定に失敗しました。時間をおいて再試行してください。" },
+      { status: 500 },
+    );
+  }
 
   const { error } = await sendMagicLinkEmail(email, redirectTo);
 

@@ -144,11 +144,13 @@ Redirect URLs:
 4. **Logs → Auth** で詳細エラーを確認
 5. テスト用にテンプレートを一時的にデフォルト（`{{ .ConfirmationURL }}`）に戻し、送信できるか確認
 
-Vercel の環境変数（任意・推奨）:
+Vercel の環境変数（任意）:
 
 | 名前 | 値 |
 |------|-----|
-| `NEXT_PUBLIC_SITE_URL` | `https://tcc-team-condition-checker.vercel.app` |
+| `NEXT_PUBLIC_SITE_URL` | 未設定でも可（アクセス中のドメインを自動使用）。設定する場合は Supabase の Redirect URLs と **完全一致** させる |
+
+**リダイレクト URL エラーが続く場合:** Supabase の Redirect URLs に、エラー画面に表示される URL をそのままコピーして追加してください。
 
 ---
 
