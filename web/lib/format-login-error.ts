@@ -1,5 +1,6 @@
 type FormatLoginErrorOptions = {
   redirectTo?: string;
+  code?: string;
 };
 
 const FORMATTED_ERROR_PREFIXES = [
@@ -32,14 +33,33 @@ export function formatLoginErrorMessage(
     lower.includes("error sending confirmation email") ||
     lower.includes("error sending email")
   ) {
+    const redirectTo = options?.redirectTo;
+    const code = options?.code;
     return [
       "ログインメールの送信に失敗しました（Supabase 側の設定を確認してください）。",
-      "① Authentication → Providers → Email が有効か",
-      "② Email Templates → Magic Link の文面に誤りがないか（下記 DEPLOY_CHECKLIST のテンプレート例を使用）",
-      "③ URL Configuration の Site URL / Redirect URLs に本番 URL があるか",
-      "④ 同じメールへの連続送信制限（数分待って再試行）",
-      "⑤ Supabase → Logs → Auth で詳細エラーを確認",
-    ].join("\n");
+      "",
+      "【まず試すこと】",
+      "Authentication → Email Templates → Magic Link を下記に差し替え → Save",
+      "",
+      "件名:",
+      "ログインリンク",
+      "",
+      "本文:",
+      '<a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">ログインする</a>',
+      "",
+      "※ まだ失敗する場合は本文を一時的に次だけにして送信テスト:",
+      '<a href="{{ .ConfirmationURL }}">ログインする</a>',
+      "",
+      "【その他の確認】",
+      "① Providers → Email が ON",
+      "② URL Configuration に Redirect URLs 登録済み",
+      redirectTo ? `③ 使用中 callback URL:\n${redirectTo}` : "",
+      "④ 同じメールへの連続送信（数分待つ）",
+      "⑤ Logs → Auth で template / smtp のエラー確認",
+      code ? `\nSupabase code: ${code}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
   }
 
   if (lower.includes("rate limit") || lower.includes("too many requests")) {

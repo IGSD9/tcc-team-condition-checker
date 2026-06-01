@@ -28,8 +28,20 @@ export async function POST(request: Request) {
   const { error } = await sendMagicLinkEmail(email, redirectTo);
 
   if (error) {
+    console.error("[send-magic-link] failed", {
+      redirectTo,
+      code: error.code,
+      status: error.status,
+      message: error.message,
+    });
+
     return NextResponse.json(
-      { error: formatLoginErrorMessage(error.message, { redirectTo }) },
+      {
+        error: formatLoginErrorMessage(error.message, {
+          redirectTo,
+          code: error.code,
+        }),
+      },
       { status: 400 },
     );
   }

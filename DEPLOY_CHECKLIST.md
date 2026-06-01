@@ -126,7 +126,12 @@ Redirect URLs:
 
 ### 3-1. スマホ向けメールテンプレート（Magic Link）
 
-メールアプリ内ブラウザでもリンクログインできるよう、**Authentication → Email Templates → Magic Link** の本文リンクを次に変更:
+**Authentication → Email Templates → Magic Link** を次に設定:
+
+| 項目 | 内容 |
+|------|------|
+| **Subject（件名）** | `ログインリンク` |
+| **Body（本文）** | 下記 HTML |
 
 ```html
 <h2>ログイン</h2>
@@ -134,15 +139,17 @@ Redirect URLs:
 <p><a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">ログインする</a></p>
 ```
 
+**Save** を押す（件名・本文どちらかに `{{` の typo があるとメール送信自体が失敗します）。
+
 ※ デフォルトの `{{ .ConfirmationURL }}` は PKCE 用のため、スマホのメールアプリ内ブラウザで開くとログインに失敗します。上記に差し替えると、**今まで通りリンクをタップするだけ**でログインできます。
 
-**「Error sending magic link email」が出る場合**
+**「Error sending magic link email」が出る場合（Redirect URLs 設定済みでも）**
 
-1. まず Magic Link テンプレートを上記に戻す（文法エラーがあるとメール自体が送れません）
-2. **Authentication → Providers → Email** で Email が ON か確認
-3. **Authentication → Rate Limits** でメール送信制限に達していないか確認（数分待つ）
-4. **Logs → Auth** で詳細エラーを確認
-5. テスト用にテンプレートを一時的にデフォルト（`{{ .ConfirmationURL }}`）に戻し、送信できるか確認
+1. **Magic Link テンプレートを上記に戻す**（最も多い原因）
+2. まだ失敗する場合、本文だけ一時的に `<a href="{{ .ConfirmationURL }}">ログインする</a>` に戻して送信テスト
+3. **Authentication → Providers → Email** で Email が ON か確認
+4. **Authentication → Rate Limits** でメール送信制限に達していないか確認（数分待つ）
+5. **Logs → Auth** で `template` / `smtp` のエラーを確認
 
 Vercel の環境変数（任意）:
 
