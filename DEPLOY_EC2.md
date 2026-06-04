@@ -115,6 +115,18 @@ npm run build && pm2 restart tcc-web
 
 ---
 
+## 見た目だけ先に確認する場合
+
+`.env` に次を追加（SMTP はプレースホルダのままで可）:
+
+```env
+SKIP_SMTP_VERIFY=1
+```
+
+`npm run verify:env` → `first-deploy.sh` でトップまで表示可能。**ログイン（マジックリンク）は SMTP 設定後**。
+
+---
+
 ## 認証フロー（EC2 完結）
 
 1. `/login` でメール送信 → 外部 SMTP 経由でリンク送信
