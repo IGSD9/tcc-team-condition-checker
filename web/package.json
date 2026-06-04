@@ -18,7 +18,8 @@
     "deploy:first": "bash deploy/scripts/first-deploy.sh",
     "deploy:update": "bash deploy/scripts/deploy.sh",
     "deploy:nginx": "bash deploy/scripts/setup-nginx.sh",
-    "deploy:ui-check": "bash deploy/scripts/finish-ui-check.sh"
+    "deploy:ui-check": "bash deploy/scripts/finish-ui-check.sh",
+    "deploy:rebuild": "bash deploy/scripts/rebuild-app.sh"
   },
   "engines": {
     "node": ">=20"
