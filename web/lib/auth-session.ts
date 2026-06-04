@@ -1,60 +1,45 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { hashOpaqueToken } from "@/lib/auth-crypto";
+import { prisma } from "@/lib/prisma";
 
 export const ACCESS_TOKEN_COOKIE_NAME = "tc_access_token";
+/** @deprecated 互換用。新規セッションでは未使用 */
 export const REFRESH_TOKEN_COOKIE_NAME = "tc_refresh_token";
 export const ACCESS_TOKEN_HEADER_NAME = "x-tc-access-token";
-/** 明示的ログアウトまで維持（refresh token で access token を更新） */
+
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+const MAGIC_LINK_TTL_MS = 15 * 60 * 1000;
+const MAGIC_LINK_RATE_WINDOW_MS = 10 * 60 * 1000;
+const MAGIC_LINK_RATE_MAX = 5;
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  );
+export function getSessionExpiresAt(): Date {
+  return new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
-
-export type ResolvedSession = {
-  accessToken: string;
-  refreshToken: string;
-  refreshed: boolean;
-};
-
-export async function isAccessTokenValid(accessToken: string): Promise<boolean> {
-  if (!accessToken) return false;
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser(accessToken);
-
-  return !error && !!user;
+export function getMagicLinkExpiresAt(): Date {
+  return new Date(Date.now() + MAGIC_LINK_TTL_MS);
 }
 
-export async function refreshAccessToken(refreshToken: string) {
-  const { data, error } = await supabase.auth.refreshSession({
-    refresh_token: refreshToken,
+export async function isSessionValid(sessionId: string): Promise<boolean> {
+  if (!sessionId) return false;
+
+  const session = await prisma.authSession.findUnique({
+    where: { id: sessionId },
+    select: { expiresAt: true },
   });
 
-  if (error || !data.session) return null;
-  return data.session;
+  return !!session && session.expiresAt > new Date();
 }
 
-export function applySessionCookies(
+export function applySessionCookie(
   response: NextResponse,
-  session: { access_token: string; refresh_token: string },
+  sessionId: string,
 ) {
   const secure = process.env.NODE_ENV === "production";
 
   response.cookies.set({
     name: ACCESS_TOKEN_COOKIE_NAME,
-    value: session.access_token,
+    value: sessionId,
     httpOnly: true,
     sameSite: "lax",
     secure,
@@ -62,15 +47,7 @@ export function applySessionCookies(
     maxAge: SESSION_MAX_AGE_SECONDS,
   });
 
-  response.cookies.set({
-    name: REFRESH_TOKEN_COOKIE_NAME,
-    value: session.refresh_token,
-    httpOnly: true,
-    sameSite: "lax",
-    secure,
-    path: "/",
-    maxAge: SESSION_MAX_AGE_SECONDS,
-  });
+  response.cookies.delete(REFRESH_TOKEN_COOKIE_NAME);
 }
 
 export function clearSessionCookies(response: NextResponse) {
@@ -78,32 +55,22 @@ export function clearSessionCookies(response: NextResponse) {
   response.cookies.delete(REFRESH_TOKEN_COOKIE_NAME);
 }
 
-/** access token 失効時は refresh し、必要なら Cookie と request header を更新 */
+export type ResolvedSession = {
+  accessToken: string;
+  refreshed: boolean;
+};
+
 export async function resolveSessionFromRequest(
   request: NextRequest,
 ): Promise<ResolvedSession | null> {
-  let accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE_NAME)?.value ?? "";
-  const refreshToken =
-    request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)?.value ?? "";
+  const sessionId = request.cookies.get(ACCESS_TOKEN_COOKIE_NAME)?.value ?? "";
+  if (!sessionId) return null;
 
-  if (accessToken && (await isAccessTokenValid(accessToken))) {
-    return {
-      accessToken,
-      refreshToken,
-      refreshed: false,
-    };
+  if (await isSessionValid(sessionId)) {
+    return { accessToken: sessionId, refreshed: false };
   }
 
-  if (!refreshToken) return null;
-
-  const session = await refreshAccessToken(refreshToken);
-  if (!session) return null;
-
-  return {
-    accessToken: session.access_token,
-    refreshToken: session.refresh_token,
-    refreshed: true,
-  };
+  return null;
 }
 
 export function attachAccessTokenHeader(
@@ -113,4 +80,67 @@ export function attachAccessTokenHeader(
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(ACCESS_TOKEN_HEADER_NAME, accessToken);
   return requestHeaders;
+}
+
+export async function createAuthSession(email: string): Promise<string> {
+  const session = await prisma.authSession.create({
+    data: {
+      email: email.toLowerCase(),
+      expiresAt: getSessionExpiresAt(),
+    },
+  });
+  return session.id;
+}
+
+export async function revokeAuthSession(sessionId: string) {
+  await prisma.authSession.deleteMany({ where: { id: sessionId } });
+}
+
+export async function countRecentMagicLinks(email: string): Promise<number> {
+  const since = new Date(Date.now() - MAGIC_LINK_RATE_WINDOW_MS);
+  return prisma.magicLinkToken.count({
+    where: {
+      email: email.toLowerCase(),
+      createdAt: { gte: since },
+    },
+  });
+}
+
+export function isMagicLinkRateLimited(count: number): boolean {
+  return count >= MAGIC_LINK_RATE_MAX;
+}
+
+export async function consumeMagicLinkToken(
+  rawToken: string,
+): Promise<{ email: string } | null> {
+  const tokenHash = hashOpaqueToken(rawToken);
+
+  const record = await prisma.magicLinkToken.findUnique({
+    where: { tokenHash },
+  });
+
+  if (!record || record.usedAt || record.expiresAt < new Date()) {
+    return null;
+  }
+
+  await prisma.magicLinkToken.update({
+    where: { id: record.id },
+    data: { usedAt: new Date() },
+  });
+
+  return { email: record.email };
+}
+
+export async function storeMagicLinkToken(email: string, rawToken: string) {
+  const normalized = email.trim().toLowerCase();
+
+  await prisma.magicLinkToken.create({
+    data: {
+      email: normalized,
+      tokenHash: hashOpaqueToken(rawToken),
+      expiresAt: getMagicLinkExpiresAt(),
+    },
+  });
+
+  return normalized;
 }

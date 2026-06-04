@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
 }
 
 model User {
@@ -27,7 +27,7 @@ model DailyReport {
   energy         Int
   connection     Int
   wednesdayExtra Int?
-  otherNote      String?
+  otherNote      String?  @db.Text
   createdAt      DateTime @default(now())
 
   @@unique([userId, reportDate])
@@ -35,5 +35,25 @@ model DailyReport {
 
 model PositiveMessage {
   id      String @id @default(cuid())
-  content String
+  content String @db.Text
+}
+
+model MagicLinkToken {
+  id        String    @id @default(cuid())
+  email     String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email, createdAt])
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  email     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
 }

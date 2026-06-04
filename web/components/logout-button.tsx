@@ -1,7 +1,5 @@
 "use client";
 
-import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
-
 const primaryButtonClass =
   "rounded-xl border border-[#1e4555] bg-[#1f4c60] px-5 py-2.5 text-sm font-medium text-white shadow-[0_3px_8px_rgba(31,76,96,0.28)] transition hover:bg-[#163b4a] disabled:cursor-not-allowed disabled:opacity-60";
 const secondaryButtonClass =
@@ -17,9 +15,7 @@ export function LogoutButton({
   className = "",
 }: LogoutButtonProps) {
   const handleLogout = async () => {
-    const supabase = createBrowserSupabaseClient();
-    await supabase.auth.signOut();
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     window.location.href = "/";
   };
 

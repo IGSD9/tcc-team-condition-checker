@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
   ACCESS_TOKEN_COOKIE_NAME,
-  applySessionCookies,
   attachAccessTokenHeader,
   resolveSessionFromRequest,
 } from "@/lib/auth-session";
@@ -26,40 +25,19 @@ function isProtectedPath(pathname: string) {
   );
 }
 
-function shouldRefreshSession(pathname: string) {
-  return !pathname.startsWith("/api/") && !pathname.startsWith("/_next/");
-}
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   let accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE_NAME)?.value ?? "";
-  let refreshApplied = false;
-  let refreshedSession: { access_token: string; refresh_token: string } | null =
-    null;
 
-  if (shouldRefreshSession(pathname)) {
-    const resolved = await resolveSessionFromRequest(request);
-    if (resolved) {
-      accessToken = resolved.accessToken;
-      if (resolved.refreshed) {
-        refreshApplied = true;
-        refreshedSession = {
-          access_token: resolved.accessToken,
-          refresh_token: resolved.refreshToken,
-        };
-      }
-    } else if (accessToken) {
-      accessToken = "";
-    }
+  const resolved = await resolveSessionFromRequest(request);
+  if (resolved) {
+    accessToken = resolved.accessToken;
+  } else if (accessToken) {
+    accessToken = "";
   }
 
-  const buildResponse = (response: NextResponse) => {
-    if (refreshApplied && refreshedSession) {
-      applySessionCookies(response, refreshedSession);
-    }
-    return response;
-  };
+  const buildResponse = (response: NextResponse) => response;
 
   if (isPublicPath(pathname) || !isProtectedPath(pathname)) {
     if (!accessToken) {

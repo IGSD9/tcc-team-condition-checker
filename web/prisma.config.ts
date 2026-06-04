@@ -11,8 +11,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    // migrate deploy は直結（DIRECT_URL）推奨。未設定時は DATABASE_URL
-    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"] ?? "",
+    url: process.env["DATABASE_URL"] ?? "",
   },
 });
 

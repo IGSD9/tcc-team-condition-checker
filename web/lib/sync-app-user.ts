@@ -1,19 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { Prisma } from "@prisma/client";
+import { getSessionEmail } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  );
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
 
 function isDatabaseUnreachableError(e: unknown): boolean {
   if (e instanceof Prisma.PrismaClientKnownRequestError) {
@@ -36,24 +23,16 @@ function extractDisplayName(email: string) {
   return localPart && localPart.length > 0 ? localPart : "user";
 }
 
-export async function syncAppUserFromAccessToken(accessToken: string) {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser(accessToken);
-
-  if (userError || !user?.email) {
-    throw new Error("Invalid Supabase session.");
-  }
-
-  const displayName = extractDisplayName(user.email);
+export async function syncAppUserFromEmail(email: string) {
+  const normalized = email.trim().toLowerCase();
+  const displayName = extractDisplayName(normalized);
 
   try {
     return await prisma.user.upsert({
-      where: { email: user.email },
+      where: { email: normalized },
       update: { lastLoginAt: new Date() },
       create: {
-        email: user.email,
+        email: normalized,
         name: displayName,
         lastLoginAt: new Date(),
       },
@@ -66,4 +45,13 @@ export async function syncAppUserFromAccessToken(accessToken: string) {
     }
     throw e;
   }
+}
+
+export async function syncAppUserFromAccessToken(sessionId: string) {
+  const email = await getSessionEmail(sessionId);
+  if (!email) {
+    throw new Error("Invalid session.");
+  }
+
+  return syncAppUserFromEmail(email);
 }

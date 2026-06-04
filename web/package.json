@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "build:vercel": "prisma generate && prisma migrate deploy && next build",
+    "build:prod": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -13,16 +14,19 @@
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "verify:env": "node scripts/verify-env.mjs"
+    "verify:env": "node scripts/verify-env.mjs",
+    "deploy:first": "bash deploy/scripts/first-deploy.sh",
+    "deploy:update": "bash deploy/scripts/deploy.sh"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.105.1",
     "lucide-react": "^1.14.0",
+    "nodemailer": "^7.0.3",
     "next": "16.2.4",
-    "pg": "^8.20.0",
+    "mysql2": "^3.14.0",
     "prisma": "^7.8.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -30,6 +34,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/nodemailer": "^6.4.17",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
