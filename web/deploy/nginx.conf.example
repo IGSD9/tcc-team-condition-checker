@@ -1,11 +1,10 @@
-# Ubuntu: /etc/nginx/sites-available/tcc
 # Amazon Linux: /etc/nginx/conf.d/tcc.conf
-#
-# sudo nginx -t && sudo systemctl reload nginx
+# 自動設定: bash deploy/scripts/setup-nginx.sh
 
 server {
-    listen 80;
-    server_name your-domain.example;   # または EC2 のパブリック IP / _
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name your-domain.example _;
 
     client_max_body_size 2m;
 

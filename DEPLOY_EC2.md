@@ -123,7 +123,20 @@ npm run build && pm2 restart tcc-web
 SKIP_SMTP_VERIFY=1
 ```
 
-`npm run verify:env` → `first-deploy.sh` でトップまで表示可能。**ログイン（マジックリンク）は SMTP 設定後**。
+```bash
+cd web
+git pull
+bash deploy/scripts/finish-ui-check.sh
+```
+
+または手順を分ける場合:
+
+```bash
+bash deploy/scripts/first-deploy.sh   # 未デプロイなら
+bash deploy/scripts/setup-nginx.sh    # Welcome to nginx 対策
+```
+
+ブラウザで `NEXT_PUBLIC_SITE_URL` を開く。**ログインは SMTP 設定後**。
 
 ---
 
