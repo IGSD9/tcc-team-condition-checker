@@ -28,9 +28,5 @@ set +a
 bash deploy/scripts/preflight.sh
 npm run verify:env
 
-if ! curl -sf -o /dev/null http://127.0.0.1:3000/ 2>/dev/null; then
-  echo "==> App not on :3000, running first-deploy..."
-  bash deploy/scripts/first-deploy.sh
-fi
-
+bash deploy/scripts/ensure-app.sh
 bash deploy/scripts/setup-nginx.sh

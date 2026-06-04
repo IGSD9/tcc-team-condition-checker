@@ -56,16 +56,23 @@ sudo nginx -t
 echo "==> reload nginx"
 sudo systemctl reload nginx
 
+echo "==> Ensure Next.js on :3000"
+if ! curl -sf -o /dev/null http://127.0.0.1:3000/ 2>/dev/null; then
+  echo "  App not up — running ensure-app.sh"
+  bash deploy/scripts/ensure-app.sh
+fi
+
 echo "==> Check app on :3000"
-APP_CODE="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/ || echo '000')"
+APP_CODE="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/ 2>/dev/null || echo '000')"
 echo "  http://127.0.0.1:3000/ -> ${APP_CODE}"
 
 echo "==> Check via nginx :80"
-NGINX_CODE="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: ${SERVER_NAME}' http://127.0.0.1/ || echo '000')"
-echo "  http://127.0.0.1/ -> ${NGINX_CODE}"
+NGINX_CODE="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: ${SERVER_NAME}" http://127.0.0.1/ 2>/dev/null || echo '000')"
+echo "  http://127.0.0.1/ (Host: ${SERVER_NAME}) -> ${NGINX_CODE}"
 
 if [ "$APP_CODE" != "200" ]; then
-  echo "WARN: Next.js が 3000 で応答していません。pm2 status / first-deploy を確認してください。" >&2
+  echo "WARN: Next.js が 3000 で応答していません。" >&2
+  echo "  実行: bash deploy/scripts/ensure-app.sh && pm2 logs tcc-web" >&2
   exit 1
 fi
 
