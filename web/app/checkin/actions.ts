@@ -45,6 +45,7 @@ export async function submitCheckinAction(formData: FormData) {
 
   const reportDate = parseReportDate(formData.get("reportDate"));
   const otherNote = parseOtherNoteFromForm(formData.get("otherNote"));
+  const data = parsed.data;
 
   await prisma.dailyReport.upsert({
     where: {
@@ -56,11 +57,23 @@ export async function submitCheckinAction(formData: FormData) {
     create: {
       userId: appUser.id,
       reportDate,
-      ...parsed.data,
+      sleep: data.sleep,
+      body: data.body,
+      mood: data.mood,
+      fog: data.fog,
+      energy: data.energy,
+      connection: data.connection,
+      wednesdayExtra: data.wednesdayExtra ?? null,
       otherNote,
     },
     update: {
-      ...parsed.data,
+      sleep: data.sleep,
+      body: data.body,
+      mood: data.mood,
+      fog: data.fog,
+      energy: data.energy,
+      connection: data.connection,
+      wednesdayExtra: data.wednesdayExtra ?? null,
       otherNote,
     },
   });

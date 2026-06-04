@@ -48,16 +48,19 @@ export type FogCode = TupleValues<(typeof CHECKIN_CODES)["fog"]>;
 export type EnergyCode = TupleValues<(typeof CHECKIN_CODES)["energy"]>;
 export type ConnectionCode = TupleValues<(typeof CHECKIN_CODES)["connection"]>;
 
-const zodEnumFromCodes = <T extends readonly [number, ...number[]]>(codes: T) =>
-  z.union(codes.map((code) => z.literal(code)) as unknown as [z.ZodLiteral<T[number]>, ...z.ZodLiteral<T[number]>[]]);
+const zodCodeField = <T extends readonly number[]>(codes: T) =>
+  z
+    .number()
+    .int()
+    .refine((v): v is T[number] => (codes as readonly number[]).includes(v));
 
 export const CheckinPayloadSchema = z.object({
-  sleep: zodEnumFromCodes(CHECKIN_CODES.sleep),
-  body: zodEnumFromCodes(CHECKIN_CODES.body),
-  mood: zodEnumFromCodes(CHECKIN_CODES.mood),
-  fog: zodEnumFromCodes(CHECKIN_CODES.fog),
-  energy: zodEnumFromCodes(CHECKIN_CODES.energy),
-  connection: zodEnumFromCodes(CHECKIN_CODES.connection),
+  sleep: zodCodeField(CHECKIN_CODES.sleep),
+  body: zodCodeField(CHECKIN_CODES.body),
+  mood: zodCodeField(CHECKIN_CODES.mood),
+  fog: zodCodeField(CHECKIN_CODES.fog),
+  energy: zodCodeField(CHECKIN_CODES.energy),
+  connection: zodCodeField(CHECKIN_CODES.connection),
   wednesdayExtra: z.number().int().nullable().optional(),
 });
 
