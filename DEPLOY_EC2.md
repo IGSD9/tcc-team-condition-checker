@@ -149,6 +149,43 @@ UPDATE User SET role = 'admin' WHERE email = 'admin@example.com';
 | リンクが無効 | 15分以内か、`AUTH_SECRET` がデプロイ後に変わっていないか |
 | ログイン後すぐ落ちる | Cookie の `secure`（HTTPS 必須か）、`NEXT_PUBLIC_SITE_URL` |
 | `migrate deploy` 失敗 | `DATABASE_URL` |
+| `npm ci` が **Killed** | メモリ不足。スワップ追加（下記）または 2GB 以上のインスタンス |
+| `EBADENGINE` / Node 18 | 下記「Node 18 のまま」を参照 |
+
+### Node 18 のまま（install-server-deps 後も v18）
+
+Amazon Linux では **dnf の nodejs 18 が優先**され、NodeSource が効かないことがあります。
+
+```bash
+cd /var/www/html/tcc-team-condition-checker/web
+git pull
+bash deploy/scripts/install-server-deps.sh
+source ~/.bashrc
+node -v
+which node
+```
+
+まだ v18 のとき（nvm で確実に 20 にする）:
+
+```bash
+bash deploy/scripts/install-node20-nvm.sh
+source ~/.bashrc
+node -v   # v20.x
+which node   # /home/ec2-user/.nvm/versions/node/... のはず
+```
+
+### スワップ追加（Killed した場合）
+
+```bash
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+free -h
+cd /var/www/html/tcc-team-condition-checker/web
+bash deploy/scripts/first-deploy.sh
+```
 
 ---
 

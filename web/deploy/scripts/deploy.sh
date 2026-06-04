@@ -5,6 +5,12 @@ set -euo pipefail
 WEB_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$WEB_ROOT"
 
+if [ -s "${HOME}/.nvm/nvm.sh" ]; then
+  # shellcheck source=/dev/null
+  . "${HOME}/.nvm/nvm.sh"
+  nvm use default >/dev/null 2>&1 || nvm use 20 >/dev/null 2>&1 || true
+fi
+
 if [ ! -f .env ]; then
   echo "Missing .env" >&2
   exit 1

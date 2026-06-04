@@ -5,6 +5,13 @@ set -euo pipefail
 WEB_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$WEB_ROOT"
 
+# nvm で Node 20 を入れた場合
+if [ -s "${HOME}/.nvm/nvm.sh" ]; then
+  # shellcheck source=/dev/null
+  . "${HOME}/.nvm/nvm.sh"
+  nvm use default >/dev/null 2>&1 || nvm use 20 >/dev/null 2>&1 || true
+fi
+
 if [ ! -f .env ]; then
   echo "Missing .env. Run: cp deploy/env.production.example .env && edit DATABASE_URL" >&2
   exit 1
@@ -15,7 +22,10 @@ set -a
 source .env
 set +a
 
+bash deploy/scripts/preflight.sh
+
 echo "==> npm ci"
+export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=1536"
 npm ci
 
 echo "==> verify env"
